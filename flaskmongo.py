@@ -7,22 +7,36 @@ from pymongo import MongoClient
 import os
 import urllib.parse
 from bson.objectid import ObjectId
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv(dotenv_path='.env.txt')
 
 app = Flask(__name__)
 
-# MongoDB Atlas setup
-username = urllib.parse.quote_plus("sowmya21")
-password = urllib.parse.quote_plus("sowmya05")
-client = MongoClient(f"mongodb+srv://{username}:{password}@cluster0.1r3xc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+# MongoDB credentials
+username = os.getenv("DB_USERNAME")
+password = os.getenv("DB_PASSWORD")
+
+# Test MongoDB connection
+try:
+    client = MongoClient(f"mongodb+srv://{username}:{password}@cluster0.1r3xc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+    client.admin.command('ping')  # Test the connection
+    print("MongoDB connection successful")
+except Exception as e:
+    print(f"MongoDB connection failed: {e}")
+
 db = client["transaction_db"]
 collection = db["transactions"]
 
+# Image Preprocessing
 def preprocess_image(image_path):
     image = Image.open(image_path)
     image = image.convert('L')  # Convert to grayscale
     image = image.point(lambda x: 0 if x < 150 else 255)  # Increase contrast
     return image
 
+# Convert time to 12-hour format
 def convert_to_12_hour_format(time_str):
     try:
         if ':' in time_str and len(time_str.split(':')[0]) == 2:
@@ -31,14 +45,14 @@ def convert_to_12_hour_format(time_str):
     except ValueError:
         return time_str  # If parsing fails, return the original
 
+# Extract transaction details from image
 def extract_transaction_details(image_path):
     image = preprocess_image(image_path)
     custom_config = r'--oem 3 --psm 6'
     text = pytesseract.image_to_string(image, config=custom_config)
     
-    # Print the raw extracted text
     print("Extracted Text:")
-    print(text)  # This will print all the extracted text
+    print(text)  # Print extracted text for debugging
 
     corrected_text = re.sub(r'[^\w\s₹.,:am|pm]', '', text)
     corrected_text = re.sub(r'(?<=\d)3(?=\d)', '₹', corrected_text)
@@ -84,10 +98,12 @@ def extract_transaction_details(image_path):
 
     return details
 
+# Flask route for the landing page
 @app.route('/')
 def index():
     return send_from_directory('', 'tpg.html')
 
+# Flask route for uploading an image and extracting transaction details
 @app.route('/upload', methods=['POST'])
 def upload_image():
     try:
@@ -110,6 +126,7 @@ def upload_image():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Flask route to save edited transaction details to MongoDB
 @app.route('/save', methods=['POST'])
 def save_edited_transaction():
     data = request.json
