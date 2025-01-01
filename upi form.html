@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPI Transaction Form</title>
+    <style>
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #f4f4f9;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #1c1c1e;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-size: 2em;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Form Group */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        label {
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        input[type="text"], input[type="number"], input[type="date"], input[type="time"], select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            width: 100%;
+            background-color: #f0f0f0;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus, input[type="time"]:focus, select:focus {
+            border-color: #2575fc;
+            box-shadow: 0 0 5px rgba(37, 117, 252, 0.5);
+        }
+
+        /* Radio Button Styles */
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+        }
+
+        .radio-group input[type="radio"] {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #2575fc;
+            border-radius: 50%;
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .radio-group input[type="radio"]:checked {
+            background-color: #2575fc;
+        }
+
+        .radio-group label {
+            font-weight: normal;
+            color: #ddd;
+            padding-left: 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Button Styles */
+        button.submit-btn, #uploadButton {
+            width: 100%;
+            padding: 12px;
+            background-color: #6a11cb;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        button.submit-btn:hover, #uploadButton:hover {
+            background-color: #960fb8;
+        }
+
+        /* Modal Styles */
+        #transactionModal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        #modalContent {
+            background-color: #1c1c1e;
+            margin: auto;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 80%;
+            max-width: 600px;
+            color: #f4f4f9;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #fff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Transaction Image</h1>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="image" accept="image/*" required>
+            <button type="button" id="uploadButton">Upload</button>
+        </form>
+
+        <!-- Modal for UPI Transaction Form -->
+        <div id="transactionModal">
+            <div id="modalContent">
+                <span class="close" id="closeModal">&times;</span>
+                <h2>Edit Transaction Form</h2>
+                <form method="POST" action="/submit">
+                    <div class="form-group">
+                        <label for="name">Name:</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transaction_id">Transaction ID:</label>
+                        <input type="text" id="transaction_id" name="transaction_id" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Date:</label>
+                        <input type="date" id="date" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="time">Time:</label>
+                        <input type="time" id="time" name="time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount:</label>
+                        <input type="number" id="amount" name="amount" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="payment_type">Payment Type:</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="payment_type" value="Debited" required> Debited</label>
+                            <label><input type="radio" name="payment_type" value="Credited" required> Credited</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="payee_type">Payee Type:</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="payee_type" value="Personal" required> Personal</label>
+                            <label><input type="radio" name="payee_type" value="Regular Bills" required> Regular Bills</label>
+                            <label><input type="radio" name="payee_type" value="Business" required> Business</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="personal_reference">Personal Reference:</label>
+                        <select id="personal_reference" name="personal_reference">
+                            <option value="Family">Family</option>
+                            <option value="Friends">Friends</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transaction_rating">Transaction Rating:</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="transaction_rating" value="Necessary" required> Necessary</label>
+                            <label><input type="radio" name="transaction_rating" value="Moderate" required> Moderate</label>
+                            <label><input type="radio" name="transaction_rating" value="Not Necessary" required> Not Necessary</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn">Submit Data</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Event listener for the upload button
+        document.getElementById('uploadButton').addEventListener('click', function() {
+            const form = document.getElementById('uploadForm');
+            const formData = new FormData(form);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    // Populate the form with extracted data
+                    document.getElementById('name').value = data.Sender || data.Receiver || 'N/A';
+                    document.getElementById('transaction_id').value = data._id || 'N/A';
+                    document.getElementById('amount').value = data.Amount || 'N/A';
+                    document.getElementById('date').value = data.Date || 'N/A';
+                    document.getElementById('time').value = data.Time || 'N/A';
+
+                    // Select the correct payment type radio button based on the status (credit or debit)
+                    if (data.Status === 'Debited') {
+                        document.querySelector('input[name="payment_type"][value="Debited"]').checked = true;
+                    } else if (data.Status === 'Credited') {
+                        document.querySelector('input[name="payment_type"][value="Credited"]').checked = true;
+                    }
+
+                    // Show modal for data entry
+                    document.getElementById('transactionModal').style.display = 'flex';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        // Close the modal when clicking the close button
+        document.getElementById('closeModal').addEventListener('click', function() {
+            document.getElementById('transactionModal').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
