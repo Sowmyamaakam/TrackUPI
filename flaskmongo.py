@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from PIL import Image
 import pytesseract
 import re
@@ -27,7 +27,9 @@ except Exception as e:
     print(f"MongoDB connection failed: {e}")
 
 db = client["transaction_db"]
-collection = db["transactions"]
+credit_collection = db["credited"]  # Collection for credited transactions
+debit_collection = db["debited"]  # Collection for debited transactions
+collection = db["transactions"]  # Common collection
 
 # Image Preprocessing
 def preprocess_image(image_path):
@@ -98,10 +100,10 @@ def extract_transaction_details(image_path):
 
     return details
 
-# Flask route for the landing page
+# Flask route for the landing page (HTML)
 @app.route('/')
 def index():
-    return send_from_directory('', 'tpg.html')
+    return send_from_directory('', 'upi form.html')
 
 # Flask route for uploading an image and extracting transaction details
 @app.route('/upload', methods=['POST'])
@@ -126,15 +128,42 @@ def upload_image():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Flask route to save edited transaction details to MongoDB
-@app.route('/save', methods=['POST'])
-def save_edited_transaction():
-    data = request.json
-    if not data.get('Date') or not data.get('Time') or not data.get('Receiver') or not data.get('Amount') or not data.get('Category'):
-        return jsonify({'error': 'Missing required fields'}), 400
+# Flask route for submitting transaction data to MongoDB
+@app.route('/submit', methods=['POST'])
+def submit_transaction():
+    try:
+        # Extract data from the form
+        name = request.form.get('name')
+        transaction_id = request.form.get('transaction_id')
+        date = request.form.get('date')
+        time = request.form.get('time')
+        amount = request.form.get('amount')
+        payment_type = request.form.get('payment_type')
+        payee_type = request.form.get('payee_type')
+        personal_reference = request.form.get('personal_reference')
+        transaction_rating = request.form.get('transaction_rating')
 
-    result = collection.insert_one(data)
-    return jsonify({'message': 'Transaction details saved successfully', '_id': str(result.inserted_id)})
+        # Prepare the transaction data
+        transaction_data = {
+            'name': name,
+            'transaction_id': transaction_id,
+            'date': date,
+            'time': time,
+            'amount': float(amount) if amount else 0.0,
+            'payee_type': payee_type,
+            'personal_reference': personal_reference,
+            'transaction_rating': transaction_rating
+        }
 
+        # Insert transaction into the respective collection based on payment type
+        if payment_type == 'Credited':
+            credit_collection.insert_one(transaction_data)
+        else:
+            debit_collection.insert_one(transaction_data)
+
+        return jsonify({'message': 'Transaction data stored successfully', 'status': 'success'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True)
